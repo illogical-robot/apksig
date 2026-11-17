@@ -25,6 +25,9 @@ import com.android.apksig.internal.util.ByteBufferUtils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+// APKMirror-added: imports for getElementType.
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -330,22 +333,18 @@ public final class Asn1BerParser {
         }
     }
 
-    private static Class<?> getElementType(Field field)
-            throws Asn1DecodingException, ClassNotFoundException {
-        String type = field.getGenericType().getTypeName();
-        int delimiterIndex =  type.indexOf('<');
-        if (delimiterIndex == -1) {
-            throw new Asn1DecodingException("Not a container type: " + field.getGenericType());
+    // BEGIN APKMirror-changed: Type.getTypeName() is only available on Android 9 and later.
+    private static Class<?> getElementType(Field field) throws Asn1DecodingException {
+        Type type = field.getGenericType();
+        if (type instanceof ParameterizedType) {
+            Type[] arguments = ((ParameterizedType) type).getActualTypeArguments();
+            if (arguments.length == 1 && arguments[0] instanceof Class) {
+                return (Class<?>) arguments[0];
+            }
         }
-        int startIndex = delimiterIndex + 1;
-        int endIndex = type.indexOf('>', startIndex);
-        // TODO: handle comma?
-        if (endIndex == -1) {
-            throw new Asn1DecodingException("Not a container type: " + field.getGenericType());
-        }
-        String elementClassName = type.substring(startIndex, endIndex);
-        return Class.forName(elementClassName);
+        throw new Asn1DecodingException("Not a container type: " + type);
     }
+    // END APKMirror-changed: Type.getTypeName() is only available on Android 9 and later.
 
     private static final class AnnotatedField {
         private final Field mField;
