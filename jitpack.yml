@@ -1,0 +1,8 @@
+jdk:
+  - openjdk17
+install:
+  - find src/main/java -name '*.java' ! -path '*/kms/aws/*' ! -path '*/kms/gcp/*' > sources.txt
+  - javac --release 11 -nowarn -d classes @sources.txt
+  - jar cf apksig.jar -C classes .
+  - jar cf apksig-sources.jar -C src/main/java .
+  - mvn install:install-file -Dfile=apksig.jar -Dsources=apksig-sources.jar -DgroupId=$GROUP -DartifactId=$ARTIFACT -Dversion=$VERSION -Dpackaging=jar
